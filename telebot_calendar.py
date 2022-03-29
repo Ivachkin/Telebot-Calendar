@@ -164,20 +164,17 @@ class Calendar:
 
         keyboard = InlineKeyboardMarkup()
 
-        for i, month in enumerate(
-            zip(self.__lang.months[0::2], self.__lang.months[1::2])
-        ):
+        for month in zip(self.__lang.months[0::3], self.__lang.months[1::3], self.__lang.months[2::3]):
             keyboard.add(
-                InlineKeyboardButton(
-                    month[0],
-                    callback_data=calendar_callback.new("MONTH", year, 2 * i + 1, "!"),
-                ),
-                InlineKeyboardButton(
-                    month[1],
-                    callback_data=calendar_callback.new(
-                        "MONTH", year, (i + 1) * 2, "!"
-                    ),
-                ),
+                *[
+                        InlineKeyboardButton(
+                            month[i],
+                            callback_data=calendar_callback.new(
+                                "MONTH", year, self.__lang.months.index(month[i]) + 1, "!"
+                                ),
+                        )
+                        for i in range(3)
+                ]
             )
 
         return keyboard
