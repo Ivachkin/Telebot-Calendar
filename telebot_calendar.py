@@ -85,14 +85,19 @@ class Calendar:
         calendar_callback = CallbackData(name, "action", "year", "month", "day")
         data_ignore = calendar_callback.new("IGNORE", year, month, "!")
         data_months = calendar_callback.new("MONTHS", year, month, "!")
+        data_years = calendar_callback.new("YEARS", year, month, "!")
 
         keyboard = InlineKeyboardMarkup(row_width=7)
 
         keyboard.add(
             InlineKeyboardButton(
-                self.__lang.months[month - 1] + " " + str(year),
+                self.__lang.months[month - 1],
                 callback_data=data_months,
-            )
+            ),
+            InlineKeyboardButton(
+                year,
+                callback_data=data_years,
+            )            
         )
 
         keyboard.add(
@@ -179,6 +184,58 @@ class Calendar:
 
         return keyboard
 
+    def create_years_calendar(
+        self, name: str = "calendar", month: int = None, year: int = None
+    ):
+        """
+        Creates a calendar with year selection
+
+        :param name:
+        :param year:
+        :return:
+        """
+
+        if year is None:
+            year = datetime.datetime.now().year
+
+        if month is None:
+            month = datetime.datetime.now().month
+
+        calendar_callback = CallbackData(name, "action", "year", "month", "day")
+
+        keyboard = InlineKeyboardMarkup()
+
+        years = range(year - 14, year + 1)
+
+        for years_group in zip(years[0::3], years[1::3], years[2::3]): 
+            keyboard.add(
+                *[
+                    InlineKeyboardButton(
+                        years_group[i],
+                        callback_data=calendar_callback.new(
+                            "YEAR", years_group[i], month, "!"
+                            )
+                    )
+                    for i in range(3)
+                ]
+            )
+
+        keyboard.add(
+            InlineKeyboardButton(
+                "<",
+                callback_data=calendar_callback.new("PREVIOUS-YEAR", years[0] - 1, month, "!"),
+            ),
+            InlineKeyboardButton(
+                "Cancel",
+                callback_data=calendar_callback.new("CANCEL", year, month, "!"),
+            ),
+            InlineKeyboardButton(
+                ">", callback_data=calendar_callback.new("NEXT-YEAR", years[-1] + 15, month, "!")
+            ),
+        )
+
+        return keyboard
+
     def calendar_query_handler(
         self,
         bot: TeleBot,
@@ -237,6 +294,32 @@ class Calendar:
                 ),
             )
             return None
+        elif action == "PREVIOUS-YEAR":
+            bot.edit_message_text(
+                text=call.message.text,
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                reply_markup=self.create_years_calendar(
+                    name=name,
+                    year=int(year),
+                    month=int(month),
+                ),
+            )
+            return None
+        elif action == "NEXT-YEAR":
+            next_month = current + datetime.timedelta(days=31)
+            bot.edit_message_text(
+                text=call.message.text,
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                reply_markup=self.create_years_calendar(
+                    name=name,
+                    year=int(year),
+                    month=int(month),
+                ),
+            )
+            return None
+
         elif action == "MONTHS":
             bot.edit_message_text(
                 text=call.message.text,
@@ -246,6 +329,24 @@ class Calendar:
             )
             return None
         elif action == "MONTH":
+            bot.edit_message_text(
+                text=call.message.text,
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                reply_markup=self.create_calendar(
+                    name=name, year=int(year), month=int(month)
+                ),
+            )
+            return None
+        elif action == "YEARS":
+            bot.edit_message_text(
+                text=call.message.text,
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                reply_markup=self.create_years_calendar(name=name, month=current.month, year=current.year),
+            )
+            return None
+        elif action == "YEAR":
             bot.edit_message_text(
                 text=call.message.text,
                 chat_id=call.message.chat.id,
